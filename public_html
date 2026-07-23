@@ -1,0 +1,65 @@
+<?php
+// ==========================================
+// API CONFIGURATION
+// ==========================================
+
+// پرووائیڈر پینل کا API URL اور اپنی API Key یہاں درج کریں
+$api_url = "https://provider-domain.com/api/v2"; 
+$api_key = "YOUR_PROVIDER_API_KEY_HERE";
+
+// سروسز مانگنے کے لیے API ریکوئسٹ
+$post_data = [
+    'key'    => $api_key,
+    'action' => 'services'
+];
+
+// cURL کے ذریعے پرووائیڈر پینل سے ڈیٹا حاصل کرنا
+$ch = curl_init();
+curl_setopt_array($ch, [
+    CURLOPT_URL            => $api_url,
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => http_build_query($post_data),
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_SSL_VERIFYPEER => false,
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+// JSON رسپانس کو Array میں تبدیل کرنا
+$services = json_decode($response, true);
+
+// ==========================================
+// DISPLAY SERVICES TABLE
+// ==========================================
+if (is_array($services) && !isset($services['error'])) {
+    echo "<h2>کل سروسز کی تعداد: " . count($services) . "</h2>";
+    echo "<table border='1' cellpadding='8' style='border-collapse: collapse; width: 100%; text-align: left;'>";
+    echo "<tr style='background-color: #1e293b; color: white;'>
+            <th>Service ID</th>
+            <th>Category</th>
+            <th>Name</th>
+            <th>Provider Rate</th>
+            <th>Your Rate (+20% Profit)</th>
+            <th>Min / Max</th>
+          </tr>";
+
+    foreach ($services as $svc) {
+        // پرووائیڈر ریٹ پر 20% اپنا منافع شامل کرنا
+        $provider_rate = floatval($svc['rate']);
+        $my_rate = $provider_rate * 1.20; 
+
+        echo "<tr>";
+        echo "<td>" . htmlspecialchars($svc['service']) . "</td>";
+        echo "<td>" . htmlspecialchars($svc['category']) . "</td>";
+        echo "<td>" . htmlspecialchars($svc['name']) . "</td>";
+        echo "<td>$" . number_format($provider_rate, 3) . "</td>";
+        echo "<td><strong style='color: green;'>$" . number_format($my_rate, 3) . "</strong></td>";
+        echo "<td>" . htmlspecialchars($svc['min']) . " / " . htmlspecialchars($svc['max']) . "</td>";
+        echo "</tr>";
+    }
+    echo "</table>";
+} else {
+    echo "<p style='color: red;'>سروسز حاصل کرنے میں ناکامی! اپنی API Key اور URL چیک کریں۔</p>";
+}
+?>
